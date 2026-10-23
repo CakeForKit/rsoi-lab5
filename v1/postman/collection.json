@@ -40,7 +40,7 @@
               "urlencoded": [
                 {
                   "key": "scope",
-                  "value": "openid",
+                  "value": "openid profile email",
                   "type": "text"
                 },
                 {
@@ -59,24 +59,23 @@
                   "type": "text"
                 },
                 {
-                  "key": "clientId",
+                  "key": "client_id",
                   "value": "{{clientId}}",
                   "type": "text"
                 },
                 {
-                  "key": "clientSecret",
+                  "key": "client_secret",
                   "value": "{{clientSecret}}",
                   "type": "text"
                 }
               ]
             },
             "url": {
-              "raw": "{{identityProviderUrl}}/oauth/token",
+              "raw": "{{identityProviderUrl}}/token",
               "host": [
                 "{{identityProviderUrl}}"
               ],
               "path": [
-                "oauth",
                 "token"
               ]
             }

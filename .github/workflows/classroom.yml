@@ -67,7 +67,28 @@ jobs:
               --set image.repository="$DOCKERHUB_USERNAME/rsoi-lab5-$release" --set image.tag="$GITHUB_SHA"
           done
 
+      - name: Connect tests to Kubernetes services
+        if: github.ref == 'refs/heads/master' && env.DOCKERHUB_USERNAME != '' && env.KUBECONFIG_B64 != ''
+        run: |
+          kubectl -n rsoi port-forward service/ms-gateway 8080:8080 >/tmp/ms-gateway-port-forward.log 2>&1 &
+          echo $! > /tmp/ms-gateway-port-forward.pid
+          kubectl -n rsoi port-forward service/keycloak 8180:8080 >/tmp/keycloak-port-forward.log 2>&1 &
+          echo $! > /tmp/keycloak-port-forward.pid
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://localhost:8180/realms/rsoi/.well-known/openid-configuration >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Keycloak did not become ready" >&2
+          exit 1
+
       - uses: education/autograding@v1
         id: autograder
-        continue-on-error: true
+
+      - name: Stop Kubernetes port forwards
+        if: always()
+        run: |
+          test -f /tmp/ms-gateway-port-forward.pid && kill "$(cat /tmp/ms-gateway-port-forward.pid)" || true
+          test -f /tmp/keycloak-port-forward.pid && kill "$(cat /tmp/keycloak-port-forward.pid)" || true
 
