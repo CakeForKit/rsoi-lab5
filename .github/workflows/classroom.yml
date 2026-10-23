@@ -66,6 +66,11 @@ jobs:
             helm upgrade --install "$release" helm/microservice --namespace rsoi --wait --timeout 3m -f "$values" \
               --set image.repository="$DOCKERHUB_USERNAME/rsoi-lab5-$release" --set image.tag="$GITHUB_SHA"
           done
+          kubectl -n rsoi rollout restart deployment/ms-flight deployment/ms-ticket deployment/ms-bonus deployment/ms-gateway
+          kubectl -n rsoi rollout status deployment/ms-flight --timeout=3m
+          kubectl -n rsoi rollout status deployment/ms-ticket --timeout=3m
+          kubectl -n rsoi rollout status deployment/ms-bonus --timeout=3m
+          kubectl -n rsoi rollout status deployment/ms-gateway --timeout=3m
 
       - name: Connect tests to Kubernetes services
         if: github.ref == 'refs/heads/master' && env.DOCKERHUB_USERNAME != '' && env.KUBECONFIG_B64 != ''

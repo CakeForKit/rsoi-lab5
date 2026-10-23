@@ -35,6 +35,8 @@ spec:
               value: test
             - name: KC_HOSTNAME_STRICT
               value: "false"
+            - name: KC_HOSTNAME
+              value: {{ .Values.hostname | quote }}
           volumeMounts:
             - name: realm
               mountPath: /opt/keycloak/data/import
