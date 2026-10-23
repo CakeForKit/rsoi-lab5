@@ -31,8 +31,8 @@ spec:
               value: program
             - name: KC_DB_PASSWORD
               value: test
-            - name: KC_HOSTNAME
-              value: http://keycloak:8080
+            - name: KC_HOSTNAME_STRICT
+              value: "false"
           volumeMounts:
             - name: realm
               mountPath: /opt/keycloak/data/import
