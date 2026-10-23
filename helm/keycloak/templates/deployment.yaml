@@ -11,6 +11,8 @@ spec:
     metadata:
       labels:
         app: keycloak
+      annotations:
+        checksum/realm: {{ printf "%s%s" (.Files.Get "realm-rsoi.json") .Values.clientSecret | sha256sum }}
     spec:
       containers:
         - name: keycloak

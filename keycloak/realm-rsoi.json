@@ -43,11 +43,11 @@
       "username": "testkate",
       "enabled": true,
       "firstName": "Test",
-      "lastName": "Max",
+      "lastName": "Kate",
       "email": "testkate@example.com",
       "emailVerified": true,
       "requiredActions": [],
-      "attributes": {"rsoi_username": ["Test Max"]},
+      "attributes": {"rsoi_username": ["Test Kate"]},
       "credentials": [{"type": "password", "value": "test", "temporary": false}]
     }
   ]
