@@ -1,0 +1,103 @@
+services:
+  postgres:
+    image: library/postgres:13
+    restart: on-failure
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DB: postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./postgres/:/docker-entrypoint-initdb.d/
+    ports:
+      - "5432:5432"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    restart: on-failure
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: program
+      KC_DB_PASSWORD: test
+      KC_HOSTNAME: http://keycloak:8080
+    volumes:
+      - ./keycloak/realm-rsoi.json:/opt/keycloak/data/import/realm-rsoi.json:ro
+    depends_on:
+      - postgres
+    ports:
+      - "8180:8080"
+
+  ms-flight:
+    image: ${DOCKER_REGISTRY:-local}/rsoi-lab5-ms-flight:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: ms-flight/Dockerfile
+    environment:
+      DATABASE_URL: postgres://program:test@postgres:5432/flights?sslmode=disable
+      OIDC_ISSUER: http://keycloak:8080/realms/rsoi
+      OIDC_JWKS_URL: http://keycloak:8080/realms/rsoi/protocol/openid-connect/certs
+      OIDC_USER_CLAIM: username
+    depends_on:
+      - postgres
+      - keycloak
+    ports:
+      - "8060:8060"
+
+  ms-ticket:
+    image: ${DOCKER_REGISTRY:-local}/rsoi-lab5-ms-ticket:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: ms-ticket/Dockerfile
+    environment:
+      DATABASE_URL: postgres://program:test@postgres:5432/tickets?sslmode=disable
+      OIDC_ISSUER: http://keycloak:8080/realms/rsoi
+      OIDC_JWKS_URL: http://keycloak:8080/realms/rsoi/protocol/openid-connect/certs
+      OIDC_USER_CLAIM: username
+    depends_on:
+      - postgres
+      - keycloak
+    ports:
+      - "8070:8070"
+
+  ms-bonus:
+    image: ${DOCKER_REGISTRY:-local}/rsoi-lab5-ms-bonus:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: ms-bonus/Dockerfile
+    environment:
+      DATABASE_URL: postgres://program:test@postgres:5432/privileges?sslmode=disable
+      OIDC_ISSUER: http://keycloak:8080/realms/rsoi
+      OIDC_JWKS_URL: http://keycloak:8080/realms/rsoi/protocol/openid-connect/certs
+      OIDC_USER_CLAIM: username
+    depends_on:
+      - postgres
+      - keycloak
+    ports:
+      - "8050:8050"
+
+  ms-gateway:
+    image: ${DOCKER_REGISTRY:-local}/rsoi-lab5-ms-gateway:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: ms-gateway/Dockerfile
+    depends_on:
+      - ms-flight
+      - ms-ticket
+      - ms-bonus
+      - keycloak
+    environment:
+      OIDC_ISSUER: http://keycloak:8080/realms/rsoi
+      OIDC_JWKS_URL: http://keycloak:8080/realms/rsoi/protocol/openid-connect/certs
+      OIDC_TOKEN_URL: http://keycloak:8080/realms/rsoi/protocol/openid-connect/token
+      OIDC_CLIENT_ID: rsoi-gateway
+      OIDC_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-rsoi-gateway-secret}
+      OIDC_USER_CLAIM: username
+    ports:
+      - "8080:8080"
+
+volumes:
+  db-data:

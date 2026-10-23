@@ -1,0 +1,10 @@
+port: 8070
+schemaDB: public
+
+postgres:
+  host: postgres
+  port: 5432
+  database: tickets
+  username: program
+  password: test
+  showSql: false

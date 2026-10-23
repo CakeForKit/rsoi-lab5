@@ -52,3 +52,34 @@
 ### Варианты заданий
 
 Распределение вариантов заданий аналогично [ЛР #2](https://github.com/bmstu-rsoi/lab2-template).
+
+## Реализация
+
+Вариант API — `v1`. OpenID Connect provider — **Keycloak 26**. Он запускается
+вместе с системой: в Docker Compose и отдельным Helm chart для EKS. Gateway предоставляет публичный endpoint
+`POST /api/v1/authorize` с JSON-полями `username` и `password`; он выполняет
+Resource Owner Password flow и возвращает ответ token endpoint без изменений.
+Для всех прочих HTTP-маршрутов требуется заголовок `Authorization: Bearer
+<access_token>`. Gateway передаёт его внутренним сервисам, где подпись, `iss`
+и `exp` проверяются повторно по RSA-ключу из JWKs.
+
+В Keycloak импортируется realm `rsoi`, confidential client `rsoi-gateway` с
+включённым Direct Access Grants и тестовый пользователь `testkate` / `test`.
+Claim `username` этого пользователя равен `Test Max`, поэтому сохранённые из
+ЛР-4 данные остаются доступны. Для production замените значения паролей и
+client secret в Helm values до первого запуска Keycloak (значение подставляется
+и в импортируемый realm).
+
+Настройка OIDC, которую сервисы получают через Kubernetes Secret `oidc`:
+
+| Переменная | Назначение |
+| --- | --- |
+| `OIDC_ISSUER` | точное значение issuer из OIDC metadata |
+| `OIDC_JWKS_URL` | URI набора публичных JWKs |
+| `OIDC_TOKEN_URL` | token endpoint (нужен только gateway) |
+| `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | confidential client для password flow |
+| `OIDC_USER_CLAIM` | claim с именем пользователя, по умолчанию `sub` |
+
+Для EKS GitHub Actions разворачивает `postgres`, затем `keycloak`, после чего
+сервисы. Локальный запуск не требует внешних OIDC-переменных: `docker compose up --build`.
+Health check `/manage/health` намеренно не требует токена для Kubernetes probes.

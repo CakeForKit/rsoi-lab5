@@ -1,0 +1,15 @@
+port: 8080
+
+
+application:
+  gateway:
+    routes:
+      - id: ms-flight
+        uri: http://ms-flight:8060
+        pathPrefix: /flights
+      - id: ms-ticket
+        uri: http://ms-ticket:8070
+        pathPrefix: /tickets
+      - id: ms-bonus
+        uri: http://ms-bonus:8050
+        pathPrefix: /bonus

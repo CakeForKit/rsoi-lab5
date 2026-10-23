@@ -1,0 +1,26 @@
+fullnameOverride: postgres
+
+image:
+  repository: postgres
+  tag: "13"
+  pullPolicy: IfNotPresent
+
+auth:
+  postgresUser: postgres
+  postgresPassword: postgres
+  appUser: program
+  appPassword: test
+
+persistence:
+  enabled: true
+  size: 1Gi
+  storageClass: auto-ebs-sc
+
+storageClass:
+  create: true
+  name: auto-ebs-sc
+  provisioner: ebs.csi.eks.amazonaws.com
+  volumeBindingMode: WaitForFirstConsumer
+  parameters:
+    type: gp3
+    encrypted: "true"

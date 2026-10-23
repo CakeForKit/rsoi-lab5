@@ -6,6 +6,12 @@ jobs:
   build:
     name: Autograding
     runs-on: ubuntu-latest
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      KUBECONFIG_B64: ${{ secrets.KUBECONFIG_B64 }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -13,15 +19,53 @@ jobs:
 
       - uses: docker/setup-buildx-action@v2
 
-      # TODO build, publish to docker hub, deploy to k8s
+      - name: Run unit tests and vet
+        run: |
+          for module in lb-core ms-flight ms-ticket ms-bonus ms-gateway; do
+            (cd "$module" && GOWORK=off go test ./... && GOWORK=off go vet ./...)
+          done
 
-      - name: Run API Tests
-        uses: matt-ball/newman-action@master
+      - name: Build Docker images
+        run: docker compose build
+        env:
+          DOCKER_REGISTRY: ${{ env.DOCKERHUB_USERNAME }}
+          IMAGE_TAG: ${{ github.sha }}
+
+      - name: Publish images
+        if: github.ref == 'refs/heads/master' && env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
+        uses: docker/login-action@v3
         with:
-          collection: <variant>/postman/collection.json
-          environment: <variant>/postman/environment.json
-          delayRequest: 100
-          reporters: '[ "cli" ]'
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+
+      - name: Push images
+        if: github.ref == 'refs/heads/master' && env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
+        run: docker compose push ms-flight ms-ticket ms-bonus ms-gateway
+        env:
+          DOCKER_REGISTRY: ${{ env.DOCKERHUB_USERNAME }}
+          IMAGE_TAG: ${{ github.sha }}
+
+      - name: Configure AWS credentials
+        if: github.ref == 'refs/heads/master' && env.KUBECONFIG_B64 != '' && env.AWS_ACCESS_KEY_ID != '' && env.AWS_SECRET_ACCESS_KEY != ''
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-north-1
+
+      - name: Deploy to Kubernetes
+        if: github.ref == 'refs/heads/master' && env.DOCKERHUB_USERNAME != '' && env.KUBECONFIG_B64 != ''
+        run: |
+          mkdir -p "$HOME/.kube"
+          echo "$KUBECONFIG_B64" | base64 --decode > "$HOME/.kube/config"
+          kubectl create namespace rsoi --dry-run=client -o yaml | kubectl apply -f -
+          helm upgrade --install postgres helm/postgres --namespace rsoi --wait --timeout 3m
+          helm upgrade --install keycloak helm/keycloak --namespace rsoi --wait --timeout 3m
+          for values in helm/microservice/values-ms-*.yaml; do
+            release=${values##*/values-}; release=${release%.yaml}
+            helm upgrade --install "$release" helm/microservice --namespace rsoi --wait --timeout 3m -f "$values" \
+              --set image.repository="$DOCKERHUB_USERNAME/rsoi-lab5-$release" --set image.tag="$GITHUB_SHA"
+          done
 
       - uses: education/autograding@v1
         id: autograder

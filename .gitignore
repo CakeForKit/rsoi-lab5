@@ -1234,3 +1234,11 @@ buildNumber.properties
 .mvn/timing.properties
 # https://github.com/takari/maven-wrapper#usage-without-binary-jar
 .mvn/wrapper/maven-wrapper.jar
+
+# Go modules and the project Makefile are source files in this repository.
+!Makefile
+!**/go.mod
+!**/go.sum
+!scripts/
+!scripts/wait-for.sh
+!scripts/wait-script.sh

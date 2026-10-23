@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm
+data:
+  realm-rsoi.json: |-
+{{ replace "rsoi-gateway-secret" .Values.clientSecret (.Files.Get "realm-rsoi.json") | indent 4 }}

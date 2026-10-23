@@ -1,0 +1,12 @@
+fullnameOverride: ms-flight
+service:
+  port: 8060
+env:
+  - name: DATABASE_URL
+    value: postgres://program:test@postgres:5432/flights?sslmode=disable
+  - name: OIDC_ISSUER
+    valueFrom: {secretKeyRef: {name: oidc, key: issuer}}
+  - name: OIDC_JWKS_URL
+    valueFrom: {secretKeyRef: {name: oidc, key: jwks-url}}
+  - name: OIDC_USER_CLAIM
+    valueFrom: {secretKeyRef: {name: oidc, key: user-claim}}

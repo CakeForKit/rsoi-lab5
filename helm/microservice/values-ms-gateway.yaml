@@ -1,0 +1,22 @@
+fullnameOverride: ms-gateway
+service:
+  port: 8080
+env:
+  - name: OIDC_ISSUER
+    valueFrom: {secretKeyRef: {name: oidc, key: issuer}}
+  - name: OIDC_JWKS_URL
+    valueFrom: {secretKeyRef: {name: oidc, key: jwks-url}}
+  - name: OIDC_TOKEN_URL
+    valueFrom: {secretKeyRef: {name: oidc, key: token-url}}
+  - name: OIDC_CLIENT_ID
+    valueFrom: {secretKeyRef: {name: oidc, key: client-id}}
+  - name: OIDC_CLIENT_SECRET
+    valueFrom: {secretKeyRef: {name: oidc, key: client-secret}}
+  - name: OIDC_USER_CLAIM
+    valueFrom: {secretKeyRef: {name: oidc, key: user-claim}}
+ingress:
+  enabled: true
+  className: nginx
+  host: rsoi.local
+  path: /
+  pathType: Prefix
