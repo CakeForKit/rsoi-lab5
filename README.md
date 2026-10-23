@@ -4,6 +4,7 @@
 
 ## OAuth2 Authorization
 
+
 ### Формулировка
 
 На базе [Лабораторной работы #4](https://github.com/bmstu-rsoi/lab2-template) реализовать OAuth2 token-based
